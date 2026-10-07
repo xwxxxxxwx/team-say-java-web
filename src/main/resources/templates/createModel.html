@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create a New Course - S.A.Y.</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+  <style>
+    :root {
+      --text-primary: #2c3e50;
+      --text-secondary: #34495e;
+      --accent: #3498db;
+      --accent-light: #e1f0fa;
+      --background-color: #ecf0f1;
+      --card-background: #ffffff;
+      --shadow: rgba(0, 0, 0, 0.1);
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: var(--background-color);
+      color: var(--text-primary);
+      line-height: 1.6;
+      padding-top: 60px; /* 为固定的返回按钮腾出空间 */
+    }
+    .back-button {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 1000;
+      background-color: var(--accent);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 5px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+    }
+    .back-button:hover {
+      background-color: #2980b9;
+    }
+    .container {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 2rem;
+    }
+    .card {
+      background-color: var(--card-background);
+      border-radius: 8px;
+      box-shadow: 0 4px 15px var(--shadow);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 20px var(--shadow);
+    }
+    h1 {
+      color: var(--text-primary);
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    .form-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: var(--text-secondary);
+      font-weight: bold;
+    }
+    .form-control, .form-select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--accent-light);
+      border-radius: 4px;
+      font-size: 1rem;
+      color: var(--text-primary);
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .form-control:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.25);
+    }
+    .input-icon {
+      position: relative;
+    }
+    .input-icon i {
+      position: absolute;
+      top: 50%;
+      left: 10px;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+    }
+    .input-icon input, .input-icon select {
+      padding-left: 35px;
+    }
+    .btn-primary {
+      display: block;
+      width: 100%;
+      padding: 1rem;
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.3s ease;
+    }
+    .btn-primary:hover {
+      background-color: #2980b9;
+      transform: translateY(-2px);
+    }
+    .alert {
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border: 1px solid transparent;
+      border-radius: 4px;
+    }
+    .alert-success {
+      color: #155724;
+      background-color: #d4edda;
+      border-color: #c3e6cb;
+    }
+    .alert-danger {
+      color: #721c24;
+      background-color: #f8d7da;
+      border-color: #f5c6cb;
+    }
+    .ql-container {
+      height: 200px;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+      }
+      .card {
+        padding: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+<a href="/api/users/dashboardT" class="back-button"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+
+<div class="container">
+  <h1>Create a New Course</h1>
+
+  <div class="alert alert-success" th:if="${param.success}" role="alert">
+    Course created successfully!
+  </div>
+
+  <div class="alert alert-danger" th:if="${errorMessage}" role="alert" th:text="${errorMessage}">
+  </div>
+
+  <form th:action="@{/course/create}" method="post" th:object="${course}">
+    <div class="card">
+      <div class="form-group">
+        <label for="course_name" class="form-label">Course Name</label>
+        <div class="input-icon">
+          <i class="fas fa-book"></i>
+          <input type="text" class="form-control" id="course_name" name="course_name" th:field="*{courseName}" required placeholder="Enter course name">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="courseDescription" class="form-label">Course Description</label>
+        <div id="editor"></div>
+        <textarea id="courseDescription" name="courseDescription" style="display:none;"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="form-group">
+        <label for="course_category" class="form-label">Course Category</label>
+        <div class="input-icon">
+          <i class="fas fa-tags"></i>
+          <select class="form-select" id="course_category" name="course_category" th:field="*{courseCategory}" required>
+            <option value="">Select a category</option>
+            <option value="science">Science</option>
+            <option value="art">Art</option>
+            <option value="engine">Engine</option>
+            <option value="math">Math</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="course_pin" class="form-label">Course PIN</label>
+        <div class="input-icon">
+          <i class="fas fa-key"></i>
+          <input type="text" class="form-control" id="course_pin" name="course_pin" th:field="*{coursePin}" required placeholder="Enter course PIN">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="ai_api" class="form-label">AI API</label>
+        <div class="input-icon">
+          <i class="fas fa-robot"></i>
+          <input type="text" class="form-control" id="ai_api" name="ai_api" th:field="*{aiApi}" placeholder="Enter AI API">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="knowledge_base_link" class="form-label">Knowledge Base Link (Optional)</label>
+        <div class="input-icon">
+          <i class="fas fa-link"></i>
+          <input type="url" class="form-control" id="knowledge_base_link" name="knowledge_base_link" th:field="*{knowledgeBaseLink}" placeholder="Enter knowledge base link">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="digital_human_api" class="form-label">Digital Human API</label>
+        <div class="input-icon">
+          <i class="fas fa-user-circle"></i>
+          <input type="text" class="form-control" id="digital_human_api" name="digital_human_api" th:field="*{digitalHumanApi}" placeholder="Enter Digital Human API">
+        </div>
+      </div>
+
+    </div>
+
+    <button type="submit" class="btn-primary">Create Course</button>
+  </form>
+</div>
+
+<script>
+  var quill = new Quill('#editor', {
+    theme: 'snow',
+    modules: {
+      toolbar: [
+        [{ 'font': [] }, { 'size': [] }],
+        ['bold', 'italic', 'underline'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        ['link', 'image']
+      ]
+    },
+    placeholder: 'Enter course description...'
+  });
+
+  var form = document.querySelector('form');
+  form.onsubmit = function() {
+    var courseDescription = document.querySelector('#courseDescription');
+    courseDescription.value = quill.root.innerHTML;
+  };
+</script>
+</body>
+</html>

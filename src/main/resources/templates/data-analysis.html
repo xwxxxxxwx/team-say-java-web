@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>Quiz Analysis</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: white;
+            --background-color: #e1f0fa;
+            --hover-color: #2980b9;
+            --sidebar-width: 400px;
+            --low-click-color: #4caf50; /* 绿色：点击量低 */
+            --medium-click-color: #ffeb3b; /* 黄色：点击量中 */
+            --high-click-color: #f44336; /* 红色：点击量高 */
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: var(--background-color);
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            background-color: var(--secondary-color);
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar h1 {
+            font-size: 32px;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            text-decoration: none;
+            color: #333;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            background-color: #ffffff;
+            border: 1px solid rgba(52, 152, 219, 0.3);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+        }
+
+        .menu-item i {
+            margin-right: 10px;
+            font-size: 18px;
+            color: var(--primary-color);
+        }
+
+        .menu-item:hover {
+            background-color: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .menu-item:hover i {
+            color: white;
+        }
+
+        .menu-item.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .menu-item.active i {
+            color: white;
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+            box-sizing: border-box;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .main-content h2 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+
+        /* 卡片样式 */
+        .card-container {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            margin-bottom: 0px; /* 缩小卡片与图表之间的间距 */
+        }
+
+        .card {
+            background-color: var(--secondary-color);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+            width: 200px;
+            text-align: center;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            color: var(--primary-color);
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .card p {
+            font-size: 28px;
+            color: #333;
+            margin: 0;
+        }
+
+        /* 卡片图标样式 */
+        .card i {
+            font-size: 40px;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+        /* 优化下拉列表的整体样式 */
+        select {
+            padding: 10px;
+            margin: 10px 0;
+            border: 2px solid var(--primary-color); /* 设置边框为主要颜色 */
+            border-radius: 5px;
+            background-color: var(--secondary-color);
+            color: var(--primary-color); /* 设置文本颜色 */
+            width: 200px;
+            cursor: pointer; /* 鼠标悬停时显示为手型 */
+            transition: all 0.3s ease; /* 添加过渡效果 */
+        }
+
+        /* 鼠标悬停时改变下拉列表样式 */
+        select:hover {
+            border: 2px solid var(--hover-color); /* 改变边框颜色 */
+            background-color: #f0f8ff; /* 改变背景颜色 */
+        }
+
+        /* 更改下拉箭头的样式 */
+        select::-ms-expand {
+            display: none; /* 隐藏 IE 默认的下拉箭头 */
+        }
+
+        /* 添加自定义的下拉箭头 */
+        .select-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .select-wrapper::after {
+            content: "\f0d7"; /* 使用 FontAwesome 图标作为箭头 */
+            font-family: "FontAwesome";
+            font-size: 16px;
+            color: var(--primary-color);
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            pointer-events: none; /* 使图标不可点击 */
+            transform: translateY(-50%); /* 垂直居中 */
+        }
+
+        /* 使下拉箭头与 select 元素配合 */
+        .select-wrapper select {
+            padding-right: 40px; /* 预留出箭头图标的空间 */
+            appearance: none; /* 隐藏默认的浏览器样式 */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+        }
+
+
+        /* 图表样式 */
+        #chart-container {
+            position: absolute;
+            top: 400px; /* 调整顶部位置 */
+            left: 625px; /* 调整左侧位置 */
+            width: 800px; /* 宽度为容器宽度减去左右边距 */
+            max-width: 800px;
+            background-color: var(--secondary-color);
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        #scoreDistributionChart {
+            width: 100%;
+            height: 400px; /* 设置固定高度 */
+        }
+
+        /* click count 样式代码 */
+        .cc-section {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .cc-section h2 {
+            color: #3498db;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .cc-menu-item {
+            border: 1px solid rgba(52, 152, 219, 0.3);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        .cc-menu-header {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .cc-menu-header:hover {
+            background-color: #f0f8ff;
+        }
+
+        .cc-menu-toggle {
+            margin-right: 10px;
+            transition: transform 0.3s ease;
+        }
+
+        .cc-menu-title {
+            flex-grow: 1;
+            font-weight: bold;
+        }
+
+        .cc-menu-count {
+            background-color: #3498db;
+            color: white;
+            border-radius: 20px;
+            padding: 2px 10px;
+            font-size: 0.9em;
+        }
+
+        .cc-menu-children {
+            display: none;
+            padding-left: 20px;
+        }
+
+        .cc-menu-item.active > .cc-menu-children {
+            display: block;
+        }
+
+        .cc-menu-item.active > .cc-menu-header .cc-menu-toggle {
+            transform: rotate(90deg);
+        }
+
+        .cc-chapter { margin-left: 0; }
+        .cc-topic { margin-left: 20px; }
+        .cc-subtopic { margin-left: 40px; }
+
+        /* 添加新的颜色类 */
+        .cc-menu-count.high {
+            background-color: #f44336; /* 红色 */
+        }
+        .cc-menu-count.medium {
+            background-color: #ffeb3b; /* 黄色 */
+        }
+        .cc-menu-count.low {
+            background-color: #4caf50; /* 绿色 */
+        }
+    </style>
+</head>
+<body>
+
+<!-- 左侧导航栏 -->
+<div class="sidebar">
+    <h1 id="course-name" th:text="${course.courseName}">Course Name</h1>
+    <input type="hidden" id="course-id" th:value="${course.courseId}">
+    <div class="menu-item active" onclick="showContent('contact')">
+        <i class="fas fa-address-book"></i> Contact Us
+    </div>
+    <div class="menu-item" onclick="showContent('quiz')">
+        <i class="fas fa-pencil-alt"></i> Quiz
+    </div>
+    <div class="menu-item" onclick="showContent('click-count')">
+        <i class="fas fa-mouse-pointer"></i> Click Count
+    </div>
+</div>
+
+<!-- 右侧主内容区 -->
+<div class="main-content" id="main-content">
+    <h2 th:text="'Welcome to the ' + ${course.courseName} + ' Data Analysis'">Welcome to the Main Content</h2>
+    <p>This is the right section of the page, where you can display your main content. Feel free to add more details, images, or interactive elements here.</p>
+</div>
+
+<!-- 初始隐藏选择框 -->
+<div id="quiz-section" style="display: none;">
+    <label for="quiz-selector">Select Quiz:</label>
+    <div class="select-wrapper">
+        <select id="quiz-selector" onchange="loadQuizQuestions()">
+            <option value="">Select Quiz</option>
+        </select>
+    </div>
+
+    <label for="question-selector">Select Question:</label>
+    <div class="select-wrapper">
+        <select id="question-selector" onchange="loadQuizStatistics()">
+            <option value="">All</option>
+        </select>
+
+    </div>
+</div>
+
+<div id="chart-container" style="display: none;">
+    <canvas id="scoreDistributionChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- 引入Chart.js -->
+<script>
+
+    function showContent(contentType) {
+        const mainContent = document.getElementById("main-content");
+        const chartContainer = document.getElementById("chart-container");
+
+        // 无论切换到哪个内容，都先隐藏图表
+        chartContainer.style.display = 'none';
+
+        if (contentType === "quiz") {
+            mainContent.innerHTML = `
+            <h2>Quiz Analysis</h2>
+            <p>Select a quiz and question to view the statistics.</p>
+            <label for="quiz-selector">Select Quiz:</label>
+            <select id="quiz-selector" onchange="loadQuizQuestions()">
+                <option value="">Select Quiz</option>
+            </select>
+            <label for="question-selector">Select Question:</label>
+            <select id="question-selector" onchange="loadQuizStatistics()">
+                <option value="">All</option>
+            </select>
+            <div id="result">
+            </div>
+        `;
+            loadQuizNumbers();
+        } else if (contentType === "contact") {
+            mainContent.innerHTML = `
+            <h2>Contact Us</h2>
+            <p>If you have any questions or need support, please feel free to reach out to us.</p>
+        `;
+        } else if (contentType === "click-count") {
+            mainContent.innerHTML = `
+            <div class="cc-section">
+                <h2>Click Count Information</h2>
+                <p>This section provides insights into the number of clicks and user interactions on the page.</p>
+                <div id="cc-menu-list">
+                    <h3>Loading menu data...</h3>
+                </div>
+            </div>
+            `;
+            loadMenuData();
+        }
+    }
+
+    function loadQuizNumbers() {
+        const courseId = document.getElementById("course-id").value;
+        fetch(`/quiz-analysis/getQuizNumbers?courseId=${courseId}`)
+            .then(response => response.json())
+            .then(data => {
+                const quizSelector = document.getElementById("quiz-selector");
+                quizSelector.innerHTML = "<option value=''>Select Quiz</option>";
+                for (const quiz of data) {
+                    if (quiz && quiz !== 'null') {  // 确保 quiz 不为 null 或者 "null"
+                        quizSelector.innerHTML += `<option value="${quiz}">${quiz}</option>`;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading quiz numbers:', error);
+                alert('Failed to load quiz numbers. Please try again later.');
+            });
+    }
+
+    function loadQuizQuestions() {
+        const quizNumber = document.getElementById("quiz-selector").value;
+        if (!quizNumber) return;
+
+        fetch(`/quiz-analysis/getQuestionsByQuiz?quizNumber=${quizNumber}`)
+            .then(response => response.json())
+            .then(data => {
+                const questionSelector = document.getElementById("question-selector");
+                questionSelector.innerHTML = "<option value=''>All</option>";
+                for (const question of data) {
+                    questionSelector.innerHTML += `<option value="${question}">${question}</option>`;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading quiz questions:', error);
+                alert('Failed to load quiz questions. Please try again later.');
+            });
+    }
+    function loadQuizStatistics() {
+        const quizNumber = document.getElementById("quiz-selector").value;
+        const questionOrder = document.getElementById("question-selector").value || 'All';  // 默认值为 'All'
+
+        // 获取基本统计数据（最大分、最小分、平均分）
+        fetch(`/quiz-analysis/getQuizStatistics?quizNumber=${quizNumber}&questionOrder=${questionOrder}`)
+            .then(response => response.json())
+            .then(data => {
+                // 调用通过率 API
+                fetch(`/quiz-analysis/getPassRate?quizNumber=${quizNumber}&questionOrder=${questionOrder}`)
+                    .then(passResponse => passResponse.json())
+                    .then(passData => {
+                        document.getElementById("result").innerHTML = `
+                        <div class="card-container">
+                            <div class="card">
+                                <i class="fas fa-trophy"></i>
+                                <h3>Max Score</h3>
+                                <p>${data.max_score}</p>
+                            </div>
+                            <div class="card">
+                                <i class="fas fa-frown"></i>
+                                <h3>Min Score</h3>
+                                <p>${data.min_score}</p>
+                            </div>
+                            <div class="card">
+                                <i class="fas fa-chart-line"></i>
+                                <h3>Average Score</h3>
+                                <p>${data.average_score.toFixed(2)}</p>
+                            </div>
+                            <div class="card">
+                                <i class="fas fa-check-circle"></i>
+                                <h3>Pass Rate</h3>
+                                <p>${(passData.pass_rate * 100).toFixed(2)}%</p>
+                            </div>
+                        </div>
+                    `;
+
+                        // 调用分数分布 API 并绘制图表
+                        fetch(`/quiz-analysis/getScoreDistribution?quizNumber=${quizNumber}&questionOrder=${questionOrder}`)
+                            .then(chartResponse => chartResponse.json())
+                            .then(chartData => {
+                                console.log("Score Distribution Data:", chartData);
+                                displayChart(chartData);
+                            })
+                            .catch(error => {
+                                console.error('Error loading score distribution:', error);
+                            });
+                    })
+                    .catch(error => {
+                        console.error('Error loading pass rate:', error);
+                    });
+            })
+            .catch(error => {
+                console.error('Error loading quiz statistics:', error);
+            });
+    }
+    // 在全局定义一个变量用于存储图表实例
+    let chartInstance = null;
+
+    function displayChart(chartData) {
+        const ctx = document.getElementById('scoreDistributionChart').getContext('2d');
+
+        // 如果已经存在一个图表实例，则销毁它
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+        const mappedData = [
+            chartData.a || 0,  // 对应 A
+            chartData.b || 0,  // 对应 B
+            chartData.c || 0,  // 对应 C
+            chartData.d || 0,  // 对应 D
+            chartData.e || 0,  // 对应 E
+            chartData.f || 0   // 对应 F
+        ];
+
+
+        // 显示图表容器
+        document.getElementById('chart-container').style.display = 'block';
+
+        // 创建新的图表实例
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['A (100%)', 'B (90-99%)', 'C (80-89%)', 'D (70-79%)', 'E (60-69%)', 'F (<60%)'],
+                datasets: [{
+                    label: 'Score Distribution',
+                    data: mappedData,
+                    backgroundColor: [
+                        '#a3e589', '#84cce2', '#f6cf56', '#ff9800', '#f7dd56', '#fc5e5c'
+                    ]
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Count'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Score Range'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    //click count部分的js代码
+    function loadMenuData() {
+        const courseId = document.getElementById("course-id").value;
+        fetch(`/click-count-analysis/getCourseClickCount?courseId=${courseId}`)
+            .then(response => response.json())
+            .then(data => {
+                const menuList = document.getElementById("cc-menu-list");
+
+                if (data.length === 0) {
+                    menuList.innerHTML = "<p>No menu data found for this course.</p>";
+                    return;
+                }
+
+                // 计算点击量的阈值
+                const clickCounts = data.flatMap(item => getAllClickCounts(item));
+                clickCounts.sort((a, b) => a - b);
+                const lowThreshold = clickCounts[Math.floor(clickCounts.length * 0.2)];
+                const highThreshold = clickCounts[Math.floor(clickCounts.length * 0.8)];
+
+                function generateMenuHTML(menuItems, level = 'chapter') {
+                    let content = "";
+                    menuItems.forEach(menu => {
+                        const colorClass = getColorClass(menu.clickCount, lowThreshold, highThreshold);
+                        content += `
+                        <div class="cc-menu-item cc-${level}">
+                            <div class="cc-menu-header" onclick="toggleCCMenuItem(this)">
+                                <span class="cc-menu-toggle">▶</span>
+                                <span class="cc-menu-title">${menu.menuNode} (${menu.category})</span>
+                                <span class="cc-menu-count ${colorClass}">${menu.clickCount} clicks</span>
+                            </div>
+                            ${menu.children && menu.children.length > 0 ?
+                            `<div class="cc-menu-children">
+                                    ${generateMenuHTML(menu.children, level === 'chapter' ? 'topic' : 'subtopic')}
+                                </div>` :
+                            ''}
+                        </div>
+                    `;
+                    });
+                    return content;
+                }
+
+                menuList.innerHTML = generateMenuHTML(data);
+            })
+            .catch(error => {
+                console.error('Error loading menu data:', error);
+                document.getElementById("cc-menu-list").innerHTML = "<p>Failed to load menu data. Please try again later.</p>";
+            });
+    }
+
+    function getAllClickCounts(item) {
+        let counts = [item.clickCount];
+        if (item.children) {
+            counts = counts.concat(item.children.flatMap(child => getAllClickCounts(child)));
+        }
+        return counts;
+    }
+
+    function getColorClass(clickCount, lowThreshold, highThreshold) {
+        if (clickCount >= highThreshold) {
+            return 'high';
+        } else if (clickCount <= lowThreshold) {
+            return 'low';
+        } else {
+            return 'medium';
+        }
+    }
+
+    function toggleCCMenuItem(element) {
+        const menuItem = element.closest('.cc-menu-item');
+        menuItem.classList.toggle('active');
+        const toggle = menuItem.querySelector('.cc-menu-toggle');
+        toggle.textContent = menuItem.classList.contains('active') ? '▼' : '▶';
+    }
+</script>
+
+</body>
+</html>

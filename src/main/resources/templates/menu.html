@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>课程目录管理</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+  <style>
+    :root {
+      --primary: #3498db;
+      --primary-light: #e1f0fa;
+      --text-primary: #333333;
+      --text-secondary: #666666;
+      --background: #f4f9fd;
+      --white: #ffffff;
+      --shadow: rgba(0, 0, 0, 0.1);
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: var(--background);
+    }
+    .sidebar {
+      background-color: white;
+      color: black;
+      min-height: 100vh;
+      padding: 20px;
+      width: 500px;
+      position: relative;
+      height: 100vh;
+    }
+    .sidebar h2 {
+      color: #3498db;
+      margin-bottom: 20px;
+      display: inline-block;
+      font-weight: bold; /* 设置字体加粗 */
+      font-family: 'Roboto', 'Arial', sans-serif; /* 切换字体样式 */
+    }
+
+    .sidebar h3 {
+      color: black;
+      margin-bottom: 20px;
+      display: inline-block;
+    }
+    .sidebar button {
+      color: black;
+      margin-bottom: 20px;
+      display: inline-block;
+    }
+    .btn-add-main {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background-color: transparent;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .directory-item {
+      background-color: white;
+      padding: 10px;
+      margin-bottom: 12px;
+      border-radius: 4px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      box-sizing: border-box;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+      transition: box-shadow 0.3s ease;
+    }
+    .directory-item:hover {
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    .directory-item input {
+      background-color: transparent;
+      border: none;
+      color: black;
+      flex-grow: 1;
+      text-align: left;
+      max-width: 60%;
+      margin-right: 10px;
+    }
+    .directory-item span, .directory-item input {
+      display: inline-block;
+      max-width: 250px; /* 控制最大显示宽度 */
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis; /* 溢出部分用省略号显示 */
+      vertical-align: middle;
+    }
+    .directory-item input:focus {
+      outline: none;
+      border-bottom: 1px solid black;
+    }
+    .dropdown-container {
+      position: relative;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+      transition: box-shadow 0.3s ease;
+    }
+    .dropdown-container:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .dropdown-toggle {
+      cursor: pointer;
+      color: #aaa;
+      font-weight: bold;
+      padding: 0 10px;
+      font-size: 16px;
+    }
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 100%;
+      background-color: #fff;
+      border-radius: 4px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+    }
+    .dropdown-menu button {
+      display: block;
+      width: 100%;
+      padding: 8px 12px;
+      text-align: left;
+      border: none;
+      background: none;
+      color: #333;
+    }
+    .dropdown-menu button:hover {
+      background-color: #f0f0f0;
+    }
+    .toggle-btn {
+      cursor: pointer;
+      font-size: 18px;
+      color: black;
+      margin-right: 10px;
+      width: 20px;
+      height: 20px;
+      text-align: center;
+    }
+    #description-box {
+      display: none;
+      margin-top: 20px;
+    }
+    .save-all-btn {
+      background-color:white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      outline: none;
+      position: relative;
+      overflow: hidden;
+      display: inline-block;/* 使按钮在同一行显示 */
+      margin-right: 10px;/* 增加两个按钮之间的间距 */
+      align-items: center; /* 水平居中 */
+    }
+    .save-all-btn:hover {
+      color: white;
+      background-color: #3498db;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      transform: translateY(-2px);
+    }
+    .save-all-btn i {
+      margin-right: 8px; /* 增加图标与文本之间的间距 */
+      font-size: 18px; /* 调整图标大小 */
+      vertical-align: middle; /* 图标垂直居中 */
+    }
+    /* 缩短输入框的默认长度 */
+    .form-control {
+      width: 60%; /* 将输入框宽度缩短为页面宽度的 60% */
+      min-height: 30px;
+      resize: none; /* 禁用手动调整大小 */
+      overflow-y: hidden; /* 隐藏垂直滚动条 */
+    }
+
+    .question-item textarea {
+      font-size: 14px; /* 调整字体大小以缩短输入框 */
+    }
+
+    /* 将保存按钮放在description输入框外部左下角 */
+    .description-container {
+      position: relative;
+      margin-top: 10px;
+    }
+
+    .description-container .save-all-btn {
+      position: absolute;
+      left: 0;
+      bottom: -40px;
+    }
+
+    .description-input {
+      width: 60%;
+      resize: none;
+      height: auto;
+    }
+
+    /* Topic 与 Subtopic 的区分 */
+    .directory-item.topic {
+      background-color: #e3f2fd; /* Topic背景颜色 */
+      border-left: 4px solid #2196f3; /* 蓝色左侧边框 */
+    }
+
+    .directory-item.subtopic {
+      background-color: #fffde7; /* Subtopic背景颜色 */
+      border-left: 4px solid #fbc02d; /* 黄色左侧边框 */
+      margin-left: 20px; /* Subtopic 向右缩进 */
+    }
+    #section-title {
+      color: #3498db;   /* 设置标题的颜色 */
+      font-weight: bold;  /* 设置字体加粗 */
+      font-size: 22px;  /* 根据需要调整字体大小 */
+    }
+    #back-btn {
+      background-color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      color: #333;
+    }
+
+    #back-btn:hover {
+      color: white;
+      background-color: #3498db;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+<div class="d-flex">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>
+      <i class="fas fa-bars" style="margin-right: 8px;"></i> <!-- 添加图标 -->
+      Course Menu
+    </h2>
+    <button class="btn-add-main" onclick="addChapter()">+</button>
+    <div id="main-directories"></div>
+    <button id="save-all-btn" onclick="saveAll()" class="save-all-btn">
+      <i class="fas fa-save"></i> Save All
+    </button>
+    <button id="upload-btn" onclick="uploadData()" class="save-all-btn">
+      <i class="fas fa-upload"></i> Upload
+    </button>
+
+  </div>
+
+  <!-- Description and Quiz Area -->
+  <div class="p-4 w-100">
+    <button id="back-btn" onclick="goBack()" class="save-all-btn" style="position: absolute; top: 20px; right: 20px;">
+      <i class="fas fa-arrow-left"></i> Back
+    </button>
+    <h4 id="section-title">
+      <i class="fas fa-book" style="margin-right: 8px;"></i> <!-- 添加图标 -->
+      Course Section
+    </h4>
+    <div id="section-box">
+      <!-- 内容会在这里动态更新 -->
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+
+<script th:inline="javascript">
+  let globalId = 0; // Global ID tracker
+  let currentSelectedChapterId = null;
+  let descriptions = {};  // Store chapter descriptions
+  let quizData = {};  // Store quizzes for each chapter
+  let unsavedChanges = false;  // Track unsaved changes
+  const maxQuestions = 10; // 设置题目的最大数量
+  let saveAllClicked = false;  // Track if saveAll was clicked
+
+
+  // Listen for page unload events
+  window.onbeforeunload = function(e) {
+    if (unsavedChanges) {
+      return 'You have unsaved changes. Are you sure you want to leave?';
+    }
+  };
+  function trackChanges() {
+    unsavedChanges = true;  // Set unsavedChanges to true whenever a change is made
+  }
+
+  // Function to calculate the maximum existing IDs across sessions (chapters, topics, and subtopics)
+  function calculateMaxIds() {
+    $('#main-directories .directory-item').each(function () {
+      const currentChapterId = parseInt($(this).attr('id').split('-')[1]);
+      globalId = Math.max(globalId, currentChapterId);
+
+      $(`#topics-${currentChapterId} .directory-item`).each(function () {
+        const currentTopicId = parseInt($(this).attr('id').split('-')[1]);
+        globalId = Math.max(globalId, currentTopicId);
+
+        $(`#subtopics-${currentTopicId} .directory-item`).each(function () {
+          const currentSubtopicId = parseInt($(this).attr('id').split('-')[1]);
+          globalId = Math.max(globalId, currentSubtopicId);
+        });
+      });
+    });
+    globalId++; // Increment to ensure new items are created with a unique ID
+  }
+
+  // Call this function during the initial load of data to ensure IDs are set correctly
+  document.addEventListener('DOMContentLoaded', function () {
+    calculateMaxIds();
+  });
+
+  function addChapter() {
+    globalId++;
+    let chapterHtml = `
+        <div class="directory-item" id="chapter-${globalId}">
+            <span class="toggle-btn" onclick="toggleChapter(${globalId})">▶</span>
+            <input type="text" id="chapter-input-${globalId}" placeholder="Chapter" />
+            <div class="dropdown-container">
+                <span class="dropdown-toggle" data-bs-toggle="dropdown">...</span>
+                <ul class="dropdown-menu">
+                    <li><button class="dropdown-item" onclick="addTopic(${globalId})"><i class="fas fa-plus-circle" style="margin-right: 6px;"></i> Add Topic</button></li>
+                    <li><button class="dropdown-item" onclick="showDescription(${globalId})"><i class="fas fa-file-alt" style="margin-right: 6px;"></i> Description</button></li>
+                    <li><button class="dropdown-item" onclick="showQuiz(${globalId})"><i class="fas fa-question-circle" style="margin-right: 6px;"></i> Quiz</button></li>
+                    <li><button class="dropdown-item" onclick="renameItem(${globalId}, 'chapter')"><i class="fas fa-pen" style="margin-right: 6px;"></i> Rename</button></li>
+                    <li><button class="dropdown-item" onclick="removeChapter(${globalId})"><i class="fas fa-trash-alt" style="margin-right: 6px;"></i> Delete</button></li>
+                </ul>
+            </div>
+        </div>
+        <div id="topics-${globalId}" class="sub-directory"></div>`;
+    $("#main-directories").append(chapterHtml);
+    autoFocusNewItem(`#chapter-input-${globalId}`, `chapter-name-${globalId}`);
+    trackChanges();
+  }
+
+  function addTopic(chapterId) {
+    globalId++;
+    let topicHtml = `
+        <div class="directory-item topic" id="topic-${globalId}">
+            <input type="text" id="topic-input-${globalId}" placeholder="Topic" />
+            <div class="dropdown-container">
+                <span class="dropdown-toggle" data-bs-toggle="dropdown">...</span>
+                <ul class="dropdown-menu">
+                    <li><button class="dropdown-item" onclick="addSubtopic(${globalId})">Add Subtopic</button></li>
+                    <li><button class="dropdown-item" onclick="renameItem(${globalId}, 'topic')">Rename</button></li>
+                    <li><button class="dropdown-item" onclick="removeTopic(${globalId})">Delete</button></li>
+                </ul>
+            </div>
+        </div>
+        <div id="subtopics-${globalId}" class="sub-sub-directory"></div>`;
+    $(`#topics-${chapterId}`).append(topicHtml); // Attach to the correct chapter
+    autoFocusNewItem(`#topic-input-${globalId}`, `topic-name-${globalId}`);
+  }
+
+  function addSubtopic(topicId) {
+    globalId++;
+    let subtopicHtml = `
+        <div class="directory-item subtopic" id="subtopic-${globalId}">
+            <input type="text" id="subtopic-input-${globalId}" placeholder="Subtopic" />
+            <div class="dropdown-container">
+                <span class="dropdown-toggle" data-bs-toggle="dropdown">...</span>
+                <ul class="dropdown-menu">
+                    <li><button class="dropdown-item" onclick="renameItem(${globalId}, 'subtopic')">Rename</button></li>
+                    <li><button class="dropdown-item" onclick="removeSubtopic(${globalId})">Delete</button></li>
+                </ul>
+            </div>
+        </div>`;
+    $(`#subtopics-${topicId}`).append(subtopicHtml); // Attach to the correct topic
+    autoFocusNewItem(`#subtopic-input-${globalId}`, `subtopic-name-${globalId}`);
+  }
+
+  function toggleChapter(chapterId) {
+    $(`#topics-${chapterId}`).slideToggle();
+  }
+
+  function removeChapter(chapterId) {
+    // Remove all topics and subtopics under the chapter
+    $(`#chapter-${chapterId}`).remove();
+    $(`#topics-${chapterId}`).remove();
+
+    // Clear the section if the currently selected chapter is being removed
+    if (currentSelectedChapterId === chapterId) {
+      $('#section-box').empty();
+      currentSelectedChapterId = null;
+    }
+  }
+
+  function removeTopic(topicId) {
+    // Remove the topic and all its subtopics
+    $(`#topic-${topicId}`).remove();
+    $(`#subtopics-${topicId}`).remove();
+  }
+
+  function removeSubtopic(subtopicId) {
+    // Simply remove the subtopic
+    $(`#subtopic-${subtopicId}`).remove();
+  }
+
+  function showDescription(chapterId) {
+    const chapterName = $(`#chapter-name-${chapterId}`).text();
+    currentSelectedChapterId = chapterId;
+    $("#section-box").html(`
+      <div class="description-container">
+        <textarea id="description-input" class="description-input" rows="4" placeholder="Enter Description for ${chapterName}" oninput="autoResize(this)"></textarea>
+        <button onclick="saveDescription(${chapterId})" class="save-all-btn">
+          <i class="fas fa-save"></i> Save Description
+        </button>
+      </div>`);
+    $('#description-input').val(descriptions[chapterId] || '');
+    $('#section-title').text(`Description for ${chapterName}`);
+    unsavedChanges = true;
+  }
+
+  function showQuiz(chapterId) {
+
+    const chapterName = $(`#chapter-name-${chapterId}`).text();
+    currentSelectedChapterId = chapterId;
+    $("#section-box").html(`
+      <div id="quiz-questions-container-${chapterId}">
+      </div>
+      <button class="save-all-btn" onclick="addQuestion(${chapterId})">
+        <i class="fas fa-plus"></i> Add Question
+      </button>
+      <button class="save-all-btn" onclick="saveQuiz(${chapterId})">
+        <i class="fas fa-save"></i> Save Quiz
+      </button>`);
+
+    loadSavedQuiz(chapterId);  // Load the quiz data based on the selected chapter
+    $('#section-title').text(`Quiz for ${chapterName}`);
+    unsavedChanges = true;
+  }
+
+  function saveDescription(chapterId) {
+    const chapterName = $(`#chapter-name-${chapterId}`).text();
+    let description = $('#description-input').val();
+    descriptions[chapterId] = description;
+    alert(`Description for ${chapterName} saved successfully!`);
+    unsavedChanges = false;
+  }
+
+  function addQuestion(chapterId) {
+    let questionCount = $(`#quiz-questions-container-${chapterId} .question-item`).length;
+    if (questionCount >= maxQuestions) {
+      alert(`You can only create up to ${maxQuestions} questions.`);
+      return;
+    }
+    questionCount++;
+    let questionHtml = `
+      <div class="question-item mb-3" id="question-${chapterId}-${questionCount}">
+        <label>Question ${questionCount}</label>
+        <select class="form-control mb-2 question-type">
+          <option value="true_false">True/False</option>
+          <option value="multiple_choice">Multiple Choice</option>
+          <option value="short_answer">Short Answer</option>
+        </select>
+        <textarea class="form-control mb-2 question-text" placeholder="Enter question" oninput="autoResize(this)"></textarea>
+        <textarea class="form-control mb-2 question-answer" placeholder="Enter answer" oninput="autoResize(this)"></textarea>
+        <button class="btn btn-danger" onclick="removeQuestion('${chapterId}', '${questionCount}')">
+          <i class="fas fa-trash"></i> Delete
+        </button>
+
+      </div>`;
+    $(`#quiz-questions-container-${chapterId}`).append(questionHtml);
+    unsavedChanges = true;
+  }
+
+  function saveQuiz(chapterId) {
+    let questions = [];
+    $(`#quiz-questions-container-${chapterId} .question-item`).each(function(index) {
+      let questionOrder = index + 1;  // Add question order based on the index
+      let questionType = $(this).find(".question-type").val();  // Get question type
+      let questionText = $(this).find(".question-text").val();
+      let questionAnswer = $(this).find(".question-answer").val();
+
+      questions.push({
+        questionOrder: questionOrder,  // Add quiz order
+        questionType: questionType,  // Add question type
+        question: questionText,
+        answer: questionAnswer
+      });
+    });
+
+    // Assign the quiz data for the chapter
+    quizData[chapterId] = {
+      quizNumber: quizData[chapterId] ? quizData[chapterId].quizNumber : chapterId,  // Ensure unique quiz number for each chapter
+      quizList: questions  // Store the list of questions
+    };
+    const chapterName = $(`#chapter-name-${chapterId}`).text();
+    alert(`Quiz for ${chapterName} saved successfully!`);
+    unsavedChanges = false;
+  }
+
+  function loadSavedQuiz(chapterId) {
+    const quizContainer = $(`#quiz-questions-container-${chapterId}`);
+    quizContainer.empty();  // Clear any existing quiz questions
+
+    // Check if quiz data exists for the current chapter
+    if (quizData[chapterId] && quizData[chapterId].quizList.length > 0) {
+      quizData[chapterId].quizList.forEach((quizItem, index) => {
+        let questionCount = index + 1;
+        let questionHtml = `
+                <div class="question-item mb-3" id="question-${chapterId}-${questionCount}">
+                    <label>Question ${questionCount}</label>
+                    <select class="form-control mb-2 question-type">
+                        <option value="true_false" ${quizItem.questionType === 'true_false' ? 'selected' : ''}>True/False</option>
+                        <option value="multiple_choice" ${quizItem.questionType === 'multiple_choice' ? 'selected' : ''}>Multiple Choice</option>
+                        <option value="short_answer" ${quizItem.questionType === 'short_answer' ? 'selected' : ''}>Short Answer</option>
+                    </select>
+                    <textarea class="form-control mb-2 question-text" placeholder="Enter question">${quizItem.question}</textarea>
+                    <textarea class="form-control mb-2 question-answer" placeholder="Enter answer">${quizItem.answer}</textarea>
+                     <button class="btn btn-danger" onclick="removeQuestion('${chapterId}', '${questionCount}')">
+                      <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>`;
+        quizContainer.append(questionHtml);
+      });
+    }
+  }
+
+
+  function removeQuestion(chapterId, questionIndex) {
+    $(`#question-${chapterId}-${questionIndex}`).remove();
+    unsavedChanges = true;
+  }
+
+  function autoResize(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+  }
+
+  function autoFocusNewItem(inputSelector, nameId) {
+    const inputElement = $(inputSelector);
+    inputElement.focus();
+    inputElement.on("blur keypress", function(event) {
+      if (event.type === "blur" || (event.type === "keypress" && event.which === 13)) {
+        const newName = inputElement.val().trim();
+        inputElement.replaceWith(`<span id="${nameId}">${newName || inputElement.attr('placeholder')}</span>`);
+      }
+    });
+  }
+
+  function renameItem(itemId, itemType) {
+    let nameElement = $(`#${itemType}-name-${itemId}`);
+    nameElement.replaceWith(`<input type="text" id="${itemType}-input-${itemId}" value="${nameElement.text()}" />`);
+    $(`#${itemType}-input-${itemId}`).focus().on("blur keypress", function(event) {
+      if (event.type === "blur" || (event.type === "keypress" && event.which === 13)) {
+        const newName = $(this).val().trim();
+        $(this).replaceWith(`<span id="${itemType}-name-${itemId}">${newName || $(this).attr('placeholder')}</span>`);
+      }
+    });
+  }
+
+
+  function saveAll() {
+    const directories = [];
+    const courseId = new URLSearchParams(window.location.search).get('courseId');
+
+
+    $('#main-directories .directory-item').each(function () {
+      const chapterId = parseInt($(this).attr('id').split('-')[1]);
+      const chapterName = $(`#chapter-name-${chapterId}`).text().trim();
+
+      if (!chapterName) {
+        return;}
+
+
+      let chapter = {
+        courseId: courseId,
+        menuNode: chapterName,
+        parentId: null,  // 章节的 parentId 始终为 null
+        category: 'chapter',
+        description: descriptions[chapterId] || '',
+        clickCount: $(`#chapter-${chapterId}`).data('clickCount') || 0,  // 读取 clickCount,
+        quizNumber: quizData[chapterId] ? quizData[chapterId].quizNumber : null,
+        quizList: quizData[chapterId] ? quizData[chapterId].quizList : [],
+        topics: []
+      };
+
+      // 处理每个章节下的主题
+      $(`#topics-${chapterId} .directory-item`).each(function () {
+        const topicId = parseInt($(this).attr('id').split('-')[1]);
+        const topicName = $(`#topic-name-${topicId}`).text().trim();
+
+        if (!topicName) {
+          return;
+        }
+        let topic = {
+          menuNode: topicName,
+          parentId: chapterId,  // 主题的 parentId 为它所属的章节 ID
+          category: 'topic',
+          description: '',
+          clickCount: parseInt($(`#topic-${topicId}`).data('clickCount')) || 0,
+          subTopics: []
+        };
+
+        // 处理每个主题下的子主题
+        $(`#subtopics-${topicId} .directory-item`).each(function () {
+          const subtopicId = parseInt($(this).attr('id').split('-')[1]);
+          const subtopicName = $(`#subtopic-name-${subtopicId}`).text().trim();
+
+          if (!subtopicName) {
+            return;
+          }
+
+          let subTopic = {
+            menuNode: subtopicName,
+            parentId: topicId,  // 子主题的 parentId 为它所属的主题 ID
+            category: 'subtopic',
+            description: '',
+            clickCount: parseInt($(`#subtopic-${subtopicId}`).data('clickCount')) || 0,  // 读取子主题的 clickCount
+          };
+
+          topic.subTopics.push(subTopic);
+        });
+
+        chapter.topics.push(topic);
+      });
+
+      directories.push(chapter);
+    });
+
+    // 发送数据到后端
+    $.ajax({
+      type: 'POST',
+      url: '/menu/saveAll',
+      contentType: 'application/json',
+      data: JSON.stringify({
+        courseId: courseId,
+        chapters: directories
+      }),
+      success: function () {
+        alert('Data saved successfully');
+        saveAllClicked = true;
+        unsavedChanges = false; // Reset unsaved changes flag after save
+        console.log("SaveAll successful, saveAllClicked set to: ", saveAllClicked);
+      },
+      error: function () {
+        alert('Failed to save data');
+      }
+    });
+  }
+
+  function uploadData() {
+    if (!saveAllClicked) {
+      alert('You must save before you can deploy!');
+      return;
+    }
+
+    const courseId = new URLSearchParams(window.location.search).get('courseId'); // Get the courseId from the URL
+
+    // Ensure the courseId is included in the request
+    $.ajax({
+      type: 'POST',
+      url: '/menu/upload',
+      data: { courseId: courseId }, // Pass courseId as a parameter
+      success: function() {
+        alert('Upload successful');
+        window.location.href = '/api/users/dashboardT'; // Redirect to the desired page
+      },
+      error: function() {
+        alert('Upload failed');
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const courseMenu = /*[[${courseMenu}]]*/ [];  // 从后台获取数据，确保是个有效数组
+    console.log("Received courseMenu data: ", courseMenu);  // Log the received data
+    prefillMenu(courseMenu);  // 调用预填充函数
+  });
+
+  // 预填充数据函数
+  function prefillMenu(courseMenu) {
+    courseMenu.forEach(addChapterFromData);  // 遍历并填充每个章节（chapter）
+  }
+  //
+  // // 添加章节（chapter）并预填充数据
+  function addChapterFromData(chapterData) {
+    addChapter();  // 使用现有函数添加章节
+    const currentChapterId = globalId;  // 获取当前添加的章节ID
+
+    // 设置章节的名称、描述和quiz信息
+    $(`#chapter-input-${currentChapterId}`).val(chapterData.menuNode);
+    descriptions[currentChapterId] = chapterData.description || '';
+
+    if (chapterData.quizNumber) {
+      // 仅保留 "-" 后面的部分，如果存在
+      const quizNumberParts = chapterData.quizNumber.split("-");
+      const modifiedQuizNumber = quizNumberParts.length > 1 ? quizNumberParts[1] : chapterData.quizNumber;
+      console.log(`Modified quizNumber for chapter ${currentChapterId}:`, modifiedQuizNumber);
+      quizData[currentChapterId] = {
+        quizNumber: modifiedQuizNumber,
+        quizList: chapterData.quizList || [],  // Quiz list to store questions, answers, and other quiz details
+      };
+      console.log("Updated quizData:", quizData);
+      // 如果 quizList 存在，自动填充 quiz 数据
+      if (quizData[currentChapterId].quizList.length > 0) {
+        loadSavedQuiz(currentChapterId);  // 调用现有的加载方法
+      }
+    }
+
+    // 递归处理子节点（topics）
+    if (chapterData.children) {
+      chapterData.children.forEach((topicData) => addTopicFromData(topicData, currentChapterId));
+    }
+  }
+
+  // 添加主题（topic）并预填充数据
+  function addTopicFromData(topicData, chapterId) {
+    addTopic(chapterId);  // 使用现有函数添加主题
+    const currentTopicId = globalId;  // 获取当前添加的主题ID
+
+    // 设置主题名称
+    $(`#topic-input-${currentTopicId}`).val(topicData.menuNode);
+    $(`#topic-${currentTopicId}`).data('clickCount', topicData.clickCount || 0);  // 设置 clickCount
+
+    // 递归处理子节点（subtopics）
+    if (topicData.children) {
+      topicData.children.forEach((subtopicData) => addSubtopicFromData(subtopicData, currentTopicId));
+    }
+  }
+
+
+  // 添加子主题（subtopic）并预填充数据
+  function addSubtopicFromData(subtopicData, topicId) {
+    addSubtopic(topicId);  // 使用现有函数添加子主题
+    const currentSubtopicId = globalId;  // 获取当前添加的子主题ID
+
+    // 设置子主题名称
+    $(`#subtopic-input-${currentSubtopicId}`).val(subtopicData.menuNode);
+    $(`#subtopic-${currentSubtopicId}`).data('clickCount', subtopicData.clickCount || 0);  // 设置 clickCount
+  }
+
+  function goBack() {
+    window.location.href = '/api/users/dashboardT';
+  }
+
+</script>
+</body>
+</html>

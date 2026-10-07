@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Feedback - S.A.Y.</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        :root {
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --accent: #3498db;
+            --accent-light: #e1f0fa;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --background-color: #ffffff;
+            --card-background: #ffffff;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            padding-top: 80px; /* 为固定的返回按钮腾出空间 */
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                    linear-gradient(45deg, var(--accent-light) 25%, transparent 25%),
+                    linear-gradient(-45deg, var(--accent-light) 25%, transparent 25%),
+                    linear-gradient(45deg, transparent 75%, var(--accent-light) 75%),
+                    linear-gradient(-45deg, transparent 75%, var(--accent-light) 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            opacity: 0.2;
+            z-index: -1;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card-background);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px var(--shadow);
+        }
+        h1 {
+            text-align: center;
+            color: var(--text-primary);
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+            color: var(--text-secondary);
+        }
+        select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--accent-light);
+            border-radius: 6px;
+            font-size: 16px;
+            color: var(--text-primary);
+            background-color: var(--background-color);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.25);
+        }
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23555' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+        }
+        .star-rating {
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-start;
+        }
+        .star-rating input[type="radio"] {
+            display: none;
+        }
+        .star-rating label {
+            color: var(--accent-light);
+            font-size: 30px;
+            padding: 0 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .star-rating label:before {
+            content: "\2605";
+        }
+        .star-rating input[type="radio"]:checked ~ label {
+            color: var(--accent);
+        }
+        .star-rating label:hover,
+        .star-rating label:hover ~ label {
+            color: var(--accent);
+            transform: scale(1.2);
+            text-shadow: 0 0 5px var(--accent);
+        }
+        .star-rating-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent);
+            margin-left: 10px;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        button {
+            padding: 12px;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: var(--accent-light);
+            color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .message {
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background-color: var(--accent);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        .back-button:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+<a href="/api/users/dashboardS" class="back-button"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+
+<div class="container">
+    <h1>Course Feedback</h1>
+
+    <div th:if="${successMessage}" th:text="${successMessage}" class="message success"></div>
+    <div th:if="${error}" th:text="${error}" class="message error"></div>
+
+    <form action="/api/feedback/submit" method="post">
+        <div class="form-group">
+            <label for="courseSelect">Select Course:</label>
+            <select id="courseSelect" name="courseId" required>
+                <option value="">Choose a course</option>
+                <option th:each="course : ${courses}" th:value="${course.courseId}" th:text="${course.courseName}"></option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Rating:</label>
+            <div class="star-rating">
+                <input type="radio" id="star1" name="rating" value="1" /><label for="star1"></label>
+                <input type="radio" id="star2" name="rating" value="2" /><label for="star2"></label>
+                <input type="radio" id="star3" name="rating" value="3" /><label for="star3"></label>
+                <input type="radio" id="star4" name="rating" value="4" /><label for="star4"></label>
+                <input type="radio" id="star5" name="rating" value="5" /><label for="star5"></label>
+                <input type="radio" id="star6" name="rating" value="6" /><label for="star6"></label>
+                <input type="radio" id="star7" name="rating" value="7" /><label for="star7"></label>
+                <input type="radio" id="star8" name="rating" value="8" /><label for="star8"></label>
+                <input type="radio" id="star9" name="rating" value="9" /><label for="star9"></label>
+                <input type="radio" id="star10" name="rating" value="10" /><label for="star10"></label>
+            </div>
+            <span class="star-rating-value"></span>
+        </div>
+
+        <div class="form-group">
+            <label for="comment">Comment:</label>
+            <textarea id="comment" name="comment" required placeholder="Please leave your comment"></textarea>
+        </div>
+
+        <button type="submit"><i class="fas fa-paper-plane"></i> Submit Feedback</button>
+    </form>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const starRating = document.querySelector('.star-rating');
+        const ratingValue = document.querySelector('.star-rating-value');
+        const stars = starRating.querySelectorAll('input');
+
+        stars.forEach(star => {
+            star.addEventListener('change', function() {
+                ratingValue.textContent = this.value + "/10";
+                highlightStars(this.value);
+            });
+        });
+
+        starRating.addEventListener('mouseover', function(e) {
+            if (e.target.tagName === 'LABEL') {
+                const value = e.target.previousElementSibling.value;
+                highlightStars(value);
+                ratingValue.textContent = value + "/10";
+            }
+        });
+
+        starRating.addEventListener('mouseout', function() {
+            const checkedStar = starRating.querySelector('input:checked');
+            if (checkedStar) {
+                highlightStars(checkedStar.value);
+                ratingValue.textContent = checkedStar.value + "/10";
+            } else {
+                clearStarHighlights();
+                ratingValue.textContent = "";
+            }
+        });
+
+        function highlightStars(value) {
+            stars.forEach(star => {
+                if (star.value <= value) {
+                    star.nextElementSibling.style.color = 'var(--accent)';
+                    star.nextElementSibling.style.transform = 'scale(1.2)';
+                    star.nextElementSibling.style.textShadow = '0 0 5px var(--accent)';
+                } else {
+                    star.nextElementSibling.style.color = 'var(--accent-light)';
+                    star.nextElementSibling.style.transform = 'scale(1)';
+                    star.nextElementSibling.style.textShadow = 'none';
+                }
+            });
+        }
+
+        function clearStarHighlights() {
+            stars.forEach(star => {
+                star.nextElementSibling.style.color = 'var(--accent-light)';
+                star.nextElementSibling.style.transform = 'scale(1)';
+                star.nextElementSibling.style.textShadow = 'none';
+            });
+        }
+    });
+</script>
+</body>
+</html>

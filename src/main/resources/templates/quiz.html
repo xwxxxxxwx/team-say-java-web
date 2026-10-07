@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        #quiz-container {
+            background-color: #f7f7f7;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        #quiz-question {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        #chat-input {
+            width: calc(100% - 70px);
+            padding: 10px;
+            font-size: 16px;
+        }
+        #send-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #gpt-feedback {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<div id="quiz-container">
+    <h2>Quiz Time</h2>
+    <div id="quiz-question"></div>
+    <input type="text" id="chat-input" placeholder="Your answer..." />
+    <button id="send-button" onclick="sendAnswer()">Send</button>
+
+    <!-- 显示 GPT 的反馈 -->
+    <div id="gpt-feedback"></div>
+</div>
+
+<script>
+    let quizNumber = '[[${quizNumber}]]' ;
+    let courseId = '[[${courseId}]]';
+    let currentQuestionIndex = 1;
+    let maxOrder = 0;
+    let answers = [];  // 暂存所有答案
+    let userId = '';  // 动态获取用户ID
+
+    window.onload = function() {
+        fetch('/quiz/get-user-id')
+            .then(response => response.json())
+            .then(data => {
+                if (data.userId) {
+                    userId = data.userId;
+                    console.log("User ID:", userId);
+
+                    // 获取最大问题顺序
+                    fetch(`/quiz/get-max-order?quizNumber=${quizNumber}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            maxOrder = data.maxOrder;
+                            askNextQuestion();  // 调用函数提问第一道题目
+                        });
+                } else {
+                    console.error("Failed to retrieve user ID");
+                }
+            })
+            .catch(error => console.error('Error fetching user ID:', error));
+    };
+
+    function askNextQuestion() {
+        if (currentQuestionIndex <= maxOrder) {
+            // 请求当前的问题
+            fetch(`/quiz/get-question?quizNumber=${quizNumber}&questionOrder=${currentQuestionIndex}`)
+                .then(response => response.json())
+                .then(data => {
+                    const question = data.question;
+                    // 显示当前的问题
+                    document.getElementById('quiz-question').textContent = question;
+                });
+        } else {
+            document.getElementById('quiz-question').textContent = "Quiz Completed!";
+            submitAllAnswers();  // 当所有问题回答完毕后提交所有答案
+        }
+    }
+
+
+    // 发送学生的答案并问下一个问题
+    function sendAnswer() {
+        const answer = document.getElementById('chat-input').value;
+        if (answer.trim() === '') return;
+
+        // 将答案存储到数组中，携带 userId
+        answers.push({
+            quizNumber: quizNumber,
+            questionOrder: currentQuestionIndex,
+            answer: answer,
+            userId: userId  // 使用动态获取的 userId
+        });
+
+        currentQuestionIndex++;
+        askNextQuestion();
+        document.getElementById('chat-input').value = ''; // 清空输入框
+    }
+
+    // 提交所有答案到后端
+    function submitAllAnswers() {
+        fetch('/quiz/submit-all-answers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(answers)  // 将答案打包为 JSON 发送
+        })
+            .then(response => response.json())
+            .then(data => {
+                alert("All answers submitted!");
+                evaluateQuiz();  // 提交答案后再调用 GPT
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    // 提交所有答案并调用 GPT 进行评估
+    function evaluateQuiz() {
+        fetch(`/api/gpt/evaluate?quizNumber=${quizNumber}&userId=${userId}`, {
+            method: 'POST',
+        })
+            .then(response => response.json())
+            .then(data => {
+                // 处理 GPT 的反馈
+                const feedbackElement = document.getElementById('gpt-feedback');
+                let feedbackText = "";
+
+                if (data.choices && data.choices.length > 0) {
+                    feedbackText = data.choices[0].message.content;
+
+                } else {
+                    feedbackText = "No feedback from GPT.";
+                }
+
+                // 显示 GPT 的反馈
+                feedbackElement.textContent = feedbackText;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }
+</script>
+
+</body>
+</html>
